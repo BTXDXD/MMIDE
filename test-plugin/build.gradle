@@ -1,0 +1,19 @@
+plugins {
+    id 'java'
+}
+
+group = 'btxds.mmide'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly project(':mmide-api')
+}
+
+jar {
+    destinationDirectory = file("$rootDir/plugins")
+    archiveFileName = "neoforge-1-21-1-loader-by-btxdxd.jar"
+}

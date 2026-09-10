@@ -2,3 +2,4 @@ rootProject.name = 'MMIDE'
 
 include 'mmide-api'
 include 'mmide-app'
+include 'test-plugin'

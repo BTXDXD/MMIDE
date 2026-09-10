@@ -1,16 +1,14 @@
 package btxds.mmide.api.models;
 
-import btxds.mmide.api.Plugin;
-
+import java.util.ArrayList;
 import java.util.List;
 
 public class Workspace {
 
     // Cache
-    public String path;
-    public Plugin loader;
+    public transient String path;
 
-    // Mod
+    // Mod Metadata
     public String modName;
     public String modID;
     public String modVersion;
@@ -20,9 +18,9 @@ public class Workspace {
     public String modLicense;
     public String modIcon;
 
-    // Workspace
-    public List<Plugin> dependencies;
-    public boolean allowSourceExtraction;
+    // Workspace & Plugins
     public String loaderID;
+    public List<String> dependencies = new ArrayList<>();
+    public boolean allowSourceExtraction = true;
 
 }

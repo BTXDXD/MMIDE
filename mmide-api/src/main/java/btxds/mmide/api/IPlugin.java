@@ -2,6 +2,7 @@ package btxds.mmide.api;
 
 public interface IPlugin {
 
-    void onLoad();
+    void onLoad(PluginContext context);
+    default void onUnload() {}
 
 }
