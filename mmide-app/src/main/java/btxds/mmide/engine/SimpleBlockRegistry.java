@@ -1,6 +1,6 @@
 package btxds.mmide.engine;
 
-import btxds.mmide.api.Block;
+import btxds.mmide.api.BlockDefinition;
 import btxds.mmide.api.BlockRegistry;
 
 import java.util.Collection;
@@ -11,11 +11,13 @@ import java.util.regex.Pattern;
 public class SimpleBlockRegistry implements BlockRegistry {
 
     private static final Pattern BLOCK_ID_PATTERN = Pattern.compile("^[a-z0-9_]+$");
-    private final Map<String, Block> blocks = new LinkedHashMap<>();
+    private final Map<String, BlockDefinition> blocks = new LinkedHashMap<>();
 
     @Override
-    public void register(Block block) {
-        if (block == null) throw new IllegalArgumentException("Block cannot be null!");
+    public void register(BlockDefinition block) {
+        if (block == null) {
+            throw new IllegalArgumentException("BlockDefinition cannot be null!");
+        }
 
         String id = block.getId();
         if (id == null || id.trim().isEmpty() || !BLOCK_ID_PATTERN.matcher(id).matches()) {
@@ -27,7 +29,7 @@ public class SimpleBlockRegistry implements BlockRegistry {
 
         if (blocks.containsKey(id)) {
             throw new IllegalArgumentException(
-                    "Duplicate Block ID: '" + id + "'. A block with this ID is already registered in this plugin!"
+                    "Duplicate Block ID: '" + id + "'. A block with this ID is already registered!"
             );
         }
 
@@ -35,12 +37,12 @@ public class SimpleBlockRegistry implements BlockRegistry {
     }
 
     @Override
-    public Block getBlock(String id) {
+    public BlockDefinition get(String id) {
         return blocks.get(id);
     }
 
     @Override
-    public Collection<Block> getAllBlocks() {
+    public Collection<BlockDefinition> getAll() {
         return blocks.values();
     }
 

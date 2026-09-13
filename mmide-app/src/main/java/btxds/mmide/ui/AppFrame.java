@@ -1,6 +1,6 @@
 package btxds.mmide.ui;
 
-import btxds.mmide.api.Block;
+import btxds.mmide.api.BlockDefinition;
 import btxds.mmide.api.models.Workspace;
 import btxds.mmide.engine.Engine;
 import btxds.mmide.plugins.PluginGuard;
@@ -34,6 +34,7 @@ public class AppFrame extends JFrame {
     private final JPanel centerArea = new JPanel(new BorderLayout());
     private Workspace openedWorkspace;
     private final GraphEditor graphEditor = new GraphEditor();
+    private JButton btnSave;
 
     private JMenuItem itemSave;
 
@@ -83,16 +84,10 @@ public class AppFrame extends JFrame {
         menuBar.setBorder(null);
 
         JMenu menuWorkspace = new JMenu("Workspace");
-
         JMenuItem itemNew = new JMenuItem("Create new Workspace");
         JMenuItem itemOpen = new JMenuItem("Open Workspace");
         JMenuItem itemOpenFromJar = new JMenuItem("Open Workspace from .jar");
         itemSave = new JMenuItem("Save Workspace");
-
-        itemNew.setIcon(UIManager.getIcon("FileChooser.newFolderIcon"));
-        itemOpen.setIcon(UIManager.getIcon("FileView.directoryIcon"));
-        itemOpenFromJar.setIcon(UIManager.getIcon("FileView.fileIcon"));
-        itemSave.setIcon(UIManager.getIcon("FileView.floppyDriveIcon"));
 
         itemNew.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK));
         itemOpen.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
@@ -103,10 +98,8 @@ public class AppFrame extends JFrame {
 
         itemNew.addActionListener(e -> {
             if (!PluginGuard.canCreateWorkspace(this)) return;
-
             NewWorkspaceDialog dialog = new NewWorkspaceDialog(this, true);
             dialog.setVisible(true);
-
             Workspace ws = dialog.getCreatedWorkspace();
             if (ws != null) applyOpenedWorkspace(ws);
         });
@@ -121,12 +114,30 @@ public class AppFrame extends JFrame {
         menuWorkspace.add(itemSave);
 
         menuBar.add(menuWorkspace);
-        menuBar.add(Box.createHorizontalGlue());
 
+        btnSave = new JButton("Save");
+        btnSave.putClientProperty(FlatClientProperties.STYLE, "arc: 6; margin: 2, 8, 2, 8;");
+        btnSave.setEnabled(false);
+        btnSave.addActionListener(e -> saveCurrentWorkspace());
+        menuBar.add(btnSave);
+
+        menuBar.add(Box.createHorizontalGlue());
         setJMenuBar(menuBar);
     }
 
     private void openWorkspace() {
+        if (openedWorkspace != null && graphEditor.isDirty()) {
+            int result = JOptionPane.showConfirmDialog(
+                    this,
+                    "Save changes to workspace '" + openedWorkspace.modName + "' before opening another workspace?",
+                    "Unsaved Changes",
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.QUESTION_MESSAGE
+            );
+            if (result == JOptionPane.YES_OPTION) saveCurrentWorkspace();
+            else if (result == JOptionPane.CANCEL_OPTION) return;
+        }
+
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Open Workspace");
         chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
@@ -139,12 +150,7 @@ public class AppFrame extends JFrame {
             File manifestFile = new File(projectDir, "workspace.json");
 
             if (!manifestFile.exists()) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Selected directory is not a valid MMIDE workspace!\nMissing 'workspace.json':\n" + manifestFile.getAbsolutePath(),
-                        "Invalid Workspace",
-                        JOptionPane.WARNING_MESSAGE
-                );
+                JOptionPane.showMessageDialog(this, "Selected directory is not a valid MMIDE workspace!\nMissing 'workspace.json':\n" + manifestFile.getAbsolutePath(), "Invalid Workspace", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -155,10 +161,8 @@ public class AppFrame extends JFrame {
                     JOptionPane.showMessageDialog(this, "Failed to parse workspace.json!", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-
                 ws.path = projectDir.getAbsolutePath();
                 applyOpenedWorkspace(ws);
-                System.out.println("[Workspace] Opened: " + ws.modName + " from " + ws.path);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Failed to read workspace:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 ex.printStackTrace();
@@ -189,12 +193,11 @@ public class AppFrame extends JFrame {
 
     private void applyOpenedWorkspace(Workspace ws) {
         this.openedWorkspace = ws;
-
         setTitle("Minecraft Modding IDE - " + ws.modName + " (" + ws.loaderID + ")");
         itemSave.setEnabled(true);
+        if (btnSave != null) btnSave.setEnabled(true);
 
         graphEditor.initWorkspaceGraph(ws);
-
         initEditorLayout();
         revalidate();
         repaint();
@@ -268,9 +271,10 @@ public class AppFrame extends JFrame {
         listContainer.setOpaque(false);
         listContainer.setBorder(BorderFactory.createEmptyBorder(4, 12, 12, 12));
 
-        List<btxds.mmide.api.Block> allBlocks = Engine.getBlocksForLoader(openedWorkspace.loaderID);
+        // Получаем список BlockDefinition
+        List<BlockDefinition> allBlocks = Engine.getBlocksForLoader(openedWorkspace.loaderID);
 
-        Map<String, List<btxds.mmide.api.Block>> blocksByCategory = allBlocks.stream()
+        Map<String, List<BlockDefinition>> blocksByCategory = allBlocks.stream()
                 .collect(Collectors.groupingBy(
                         b -> b.getCategory() == null ? "General" : b.getCategory(),
                         LinkedHashMap::new,
@@ -281,11 +285,11 @@ public class AppFrame extends JFrame {
             listContainer.removeAll();
             String query = searchField.getText().trim().toLowerCase();
 
-            for (Map.Entry<String, List<btxds.mmide.api.Block>> entry : blocksByCategory.entrySet()) {
+            for (Map.Entry<String, List<BlockDefinition>> entry : blocksByCategory.entrySet()) {
                 String category = entry.getKey();
-                List<btxds.mmide.api.Block> categoryBlocks = entry.getValue();
+                List<BlockDefinition> categoryBlocks = entry.getValue();
 
-                List<btxds.mmide.api.Block> filtered = categoryBlocks.stream()
+                List<BlockDefinition> filtered = categoryBlocks.stream()
                         .filter(b -> query.isEmpty()
                                 || b.getDisplayName().toLowerCase().contains(query)
                                 || (b.getDescription() != null && b.getDescription().toLowerCase().contains(query))
@@ -301,7 +305,7 @@ public class AppFrame extends JFrame {
                     categoryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
                     listContainer.add(categoryLabel);
 
-                    for (btxds.mmide.api.Block b : filtered) {
+                    for (BlockDefinition b : filtered) {
                         listContainer.add(createBlockButton(b));
                         listContainer.add(Box.createVerticalStrut(4));
                     }
@@ -333,7 +337,7 @@ public class AppFrame extends JFrame {
         return sidebar;
     }
 
-    private JButton createBlockButton(btxds.mmide.api.Block block) {
+    private JButton createBlockButton(BlockDefinition block) {
         JButton button = new JButton(block.getDisplayName());
         button.setHorizontalAlignment(SwingConstants.LEFT);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -351,28 +355,6 @@ public class AppFrame extends JFrame {
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         button.addActionListener(e -> graphEditor.addBlock(block));
-
-        return button;
-    }
-
-    private JButton createPresetButton(Block preset) {
-        JButton button = new JButton(preset.getDisplayName());
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setToolTipText(preset.getDescription());
-
-        button.putClientProperty(FlatClientProperties.STYLE, "" +
-                "arc: 8;" +
-                "margin: 4, 12, 4, 12;" +
-                "background: lighten(@background, 6%);" +
-                "hoverBackground: lighten(@background, 10%);" +
-                "foreground: $Label.foreground;" +
-                "font: bold +0;");
-
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
-        button.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        button.addActionListener(e -> graphEditor.addBlock(preset));
 
         return button;
     }

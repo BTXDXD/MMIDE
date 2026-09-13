@@ -1,5 +1,6 @@
 package btxds.mmide.api.models;
 
+import btxds.mmide.api.DataType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,51 +10,36 @@ public class EditorBlock {
 
     public long id;
     public String typeId;
-    public String name;
-    public String category;
-
     public int x;
     public int y;
-    public int width = 170;
-    public int height = 60;
-
     public boolean isRoot = false;
-    public boolean hasInput = true;
-    public boolean hasOutput = true;
     public String customValue = "";
-
     public List<Long> nextBlockIds = new ArrayList<>();
     public Map<String, Long> paramConnections = new LinkedHashMap<>();
 
-    public List<String> requiredParams = new ArrayList<>();
-    public List<String> optionalParams = new ArrayList<>();
-    public List<String> allowedTargets = new ArrayList<>();
+    public transient String name = "";
+    public transient String category = "";
+    public transient int width = 170;
+    public transient int height = 60;
+    public transient boolean hasInput = false;
+    public transient boolean hasOutput = false;
+    public transient boolean editable = false;
+    public transient DataType editableType = DataType.STRING;
+    public transient DataType outputType = DataType.FLOW;
+    public transient Map<String, DataType> paramTypes = new LinkedHashMap<>();
+    public transient List<String> requiredParams = new ArrayList<>();
 
-    public EditorBlock() {
-    }
+    public EditorBlock() {}
 
-    public EditorBlock(long id, String typeId, String name, String category, int x, int y, List<String> req, List<String> opt, List<String> allowed) {
+    public EditorBlock(long id, String typeId, int x, int y) {
         this.id = id;
         this.typeId = typeId;
-        this.name = name;
-        this.category = category;
         this.x = x;
         this.y = y;
-
-        if (req != null) this.requiredParams.addAll(req);
-        if (opt != null) this.optionalParams.addAll(opt);
-        if (allowed != null) this.allowedTargets.addAll(allowed);
-
-        int totalParams = getAllParams().size();
-        if (totalParams > 3) {
-            this.width = Math.max(170, (totalParams + 1) * 32);
-        }
     }
 
     public List<String> getAllParams() {
-        List<String> all = new ArrayList<>(requiredParams);
-        all.addAll(optionalParams);
-        return all;
+        return requiredParams;
     }
 
 }

@@ -22,7 +22,7 @@ public class Engine {
 
     public static final Map<String, IPlugin> activePlugins = new HashMap<>();
     public static final Map<String, LoaderPlugin> loaderPlugins = new HashMap<>();
-    public static final Map<String, List<Block>> loaderBlocks = new HashMap<>();
+    public static final Map<String, List<BlockDefinition>> loaderBlocks = new HashMap<>();
 
     public static URLClassLoader pluginClassLoader;
 
@@ -180,7 +180,7 @@ public class Engine {
                         return false;
                     }
 
-                    loaderBlocks.put(p.id(), new ArrayList<>(registry.getAllBlocks()));
+                    loaderBlocks.put(p.id(), new ArrayList<>(registry.getAll()));
                 }
 
                 System.out.println("[Engine] Initialized: " + p.name() + " (id: " + p.id() + ")");
@@ -245,7 +245,7 @@ public class Engine {
         return loaderPlugins.get(loaderId);
     }
 
-    public static List<Block> getBlocksForLoader(String loaderId) {
+    public static List<BlockDefinition> getBlocksForLoader(String loaderId) {
         return loaderBlocks.getOrDefault(loaderId, Collections.emptyList());
     }
 

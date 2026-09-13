@@ -4,8 +4,8 @@ import java.util.Collection;
 
 public interface BlockRegistry {
 
-    void register(Block block);
-    Block getBlock(String id);
-    Collection<Block> getAllBlocks();
+    void register(BlockDefinition definition);
+    BlockDefinition get(String id);
+    Collection<BlockDefinition> getAll();
 
 }
